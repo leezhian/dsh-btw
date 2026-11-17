@@ -22,6 +22,7 @@ window.__ModuleLoader__.load({
     const COMMAND_NAME = 'btw'
     const TAB_TYPE_ID = '@local/dsh-btw'
     const TAB_KIND = 'btw'
+    const CHAT_SEAT = 'btw.chat.conversation'
     const RETAIN_SOURCE = 'controllerOperation'
     const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
@@ -322,6 +323,7 @@ window.__ModuleLoader__.load({
 .btw-open-button:hover { color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-2); }
 .btw-tab-title { display: inline-flex; align-items: center; gap: 6px; }
+.btw-native { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .btw-dot { width: 6px; height: 6px; border-radius: 50%;
   background: var(--dsw-alias-brand-primary); }
 `
@@ -852,6 +854,81 @@ window.__ModuleLoader__.load({
         running ? h('span', { className: 'btw-dot' }) : null)
     }
 
+    // ------------------------------------------------ native conversation --
+    //
+    // The primary tab body mounts the host's own Conversation for the child
+    // session, through the same framework-standard props the shipped
+    // subagent chat uses (blueprint:
+    // @deepseek-ai/dsh-client-ui-subagent/src/client/sidebar-chat): the tab
+    // seat declares a session-scoped child seat, SessionProvider binds the
+    // retained session, and the `conversation.content` factory renders the
+    // real composer — attachments, permission and model switchers included.
+    // The hand-built panel above stays as the error-boundary fallback.
+
+    /** Fixed Chat view selection (blueprint: FixedChatConversationView). */
+    const FixedChatView = props => props.renderSlot('conversation.session', { view: 'chat' })
+
+    /** Session-scoped conversation host (blueprint: ConversationSlotPanel). */
+    const ConversationHost = ({ sessionId, useSession, useConversation, useSessions, renderFactorySlot }) => {
+      const session = useSession(value => value)
+      const conversation = useConversation(value => value)
+      const activeNow = conversation.activeTargets.size > 0
+        || (!session.blank && !session.awaitingFirstTurn)
+        || session.running
+      const shellPhase = activeNow ? 'active' : session.promptAttempted ? 'engaging' : 'blank'
+      const summaryBlank = useSessions(state => state.byId[sessionId]?.blank)
+      const settling = shellPhase === 'blank' && session.openState === 'loading' && summaryBlank !== true
+      const hero = shellPhase === 'blank' && (session.openState === 'open' || summaryBlank === true)
+      const phase = settling ? 'settling' : hero ? 'hero' : 'active'
+      return renderFactorySlot('conversation.content', { variant: 'embedded', phase, hero }, {
+        slots: { views: FixedChatView },
+      })
+    }
+
+    /** Degrades to the hand-built panel if the native mount throws. */
+    class ChatTabBoundary extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { failed: false }
+      }
+
+      static getDerivedStateFromError() {
+        return { failed: true }
+      }
+
+      componentDidCatch(error) {
+        console.error('dsh-btw: native conversation mount failed, falling back', error)
+      }
+
+      render() {
+        const { controller, t, localizedPresetLabel, children } = this.props
+        if (this.state.failed) return h(BtwBody, { controller, t, localizedPresetLabel })
+        return children
+      }
+    }
+
+    /**
+     * Tab body: the native conversation mount, with the hand-built panel as
+     * fallback (also used while the session is still being created, or when
+     * framework props are absent). Owns the close-to-discard unmount signal
+     * for both paths.
+     */
+    function NativeChatTab({ controller, t, localizedPresetLabel, SessionProvider, renderSlot }) {
+      const state = useSource(controller.store)
+      useEffect(() => {
+        controller.noteMounted()
+        return () => { controller.scheduleDiscardIfClosed() }
+      }, [controller])
+      const reference = controller.reference
+      if (state.phase !== 'ready' || reference === undefined || SessionProvider === undefined) {
+        return h(BtwBody, { controller, t, localizedPresetLabel })
+      }
+      return h(ChatTabBoundary, { controller, t, localizedPresetLabel },
+        h('div', { className: 'btw-native', 'data-btw-native': '' },
+          h(SessionProvider, { session: reference },
+            renderSlot(CHAT_SEAT, {}))))
+    }
+
     // ---------------------------------------------------------------- apply --
 
     return {
@@ -1031,7 +1108,11 @@ window.__ModuleLoader__.load({
 
         ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
           name: 'sidebar.right.pane.tab', key: TAB_TYPE_ID, locale: 'btw',
-        }, props => h(BtwBody, { ...props, controller, t, localizedPresetLabel }))), 'dsh-btw: tab body')
+        }, props => h(NativeChatTab, { ...props, controller, t, localizedPresetLabel }))), 'dsh-btw: tab body')
+
+        ctx.effect(() => ctx.slots.inject(CHAT_SEAT, () => ctx.slots.register({
+          name: CHAT_SEAT,
+        }, ConversationHost)), 'dsh-btw: native conversation host')
 
         ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => ctx.slots.register({
           name: 'sidebar.right.pane.tab.title', key: TAB_TYPE_ID,
