@@ -1,4 +1,6 @@
-# @local/dsh-btw — btw side chat
+# @kami232/dsh-btw — btw side chat
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![npm](https://img.shields.io/npm/v/@kami232/dsh-btw)](https://www.npmjs.com/package/@kami232/dsh-btw) [![npm downloads](https://img.shields.io/npm/dm/%40kami232%2Fdsh-btw?style=flat-square&color=orange)](https://www.npmjs.com/package/@kami232/dsh-btw)
 
 English | [中文](README.zh.md)
 
@@ -32,8 +34,8 @@ context is never touched.
 
 | File | Role |
 |---|---|
-| `client.js` | Tab + start-page card + `/btw` client command; per-main-session chat lifecycle (create / prompt / discard), native conversation mount with fallback |
-| `index.js` | Host-side guard for legacy v0.3 btw subagent children only |
+| `lib/client.js` | Tab + start-page card + `/btw` client command; per-main-session chat lifecycle (create / prompt / discard), native conversation mount with fallback |
+| `lib/index.js` | Host-side guard for legacy v0.3 btw subagent children only |
 | `docs/DETAIL.md` | Usage, isolation guarantees, and limitations |
 
 ## Install
@@ -42,3 +44,7 @@ In the DeepSeek Harness Web GUI: **Plugins → Add plugin**, select this
 directory (`dsh-btw/`). Requires the standard web client composition
 (`dsh-client-ui-conversation`, `dsh-client-ui-sidebar-right`), which ships with
 DSH 0.2.2-rc.3 and later.
+
+## License
+
+MIT

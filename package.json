@@ -1,22 +1,22 @@
 {
-  "name": "@local/dsh-btw",
+  "name": "@kami232/dsh-btw",
   "version": "0.7.0",
-  "private": true,
   "type": "module",
-  "description": "Throwaway side chat: /btw opens an isolated scratch session in the right panel, never touching the main conversation's context.",
+  "description": "btw side chat: a throwaway, isolated side conversation for DeepSeek Harness — native conversation UI, zero context flow-back, discarded on close",
   "exports": {
-    ".": "./index.js",
-    "./client": "./client.js",
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
   "files": [
-    "index.js",
-    "client.js",
+    "lib/index.js",
+    "lib/client.js",
     "cordis.patch.yml",
     "locale/*.json",
     "docs",
     "icon.svg",
+    "LICENSE",
     "README.md",
     "README.zh.md"
   ],
@@ -32,5 +32,18 @@
         "@deepseek-ai/dsh-client-ui-sidebar-right"
       ]
     }
+  },
+  "license": "MIT",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "side-chat",
+    "temporary-chat",
+    "btw"
+  ],
+  "author": "kim",
+  "engines": {
+    "node": ">=18"
   }
 }

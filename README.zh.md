@@ -1,4 +1,6 @@
-# @local/dsh-btw — btw 侧边聊天
+# @kami232/dsh-btw — btw 侧边聊天
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![npm](https://img.shields.io/npm/v/@kami232/dsh-btw)](https://www.npmjs.com/package/@kami232/dsh-btw) [![npm downloads](https://img.shields.io/npm/dm/%40kami232%2Fdsh-btw?style=flat-square&color=orange)](https://www.npmjs.com/package/@kami232/dsh-btw)
 
 [English](README.md) | 中文
 
@@ -24,8 +26,8 @@
 
 | 文件 | 职责 |
 |---|---|
-| `client.js` | 标签页 + 开始页卡片 + `/btw` 客户端命令；每主会话的支线生命周期（创建/发送/丢弃），原生对话挂载与降级 |
-| `index.js` | 宿主侧仅保留针对 v0.3 遗留 btw 子代理的防护 |
+| `lib/client.js` | 标签页 + 开始页卡片 + `/btw` 客户端命令；每主会话的支线生命周期（创建/发送/丢弃），原生对话挂载与降级 |
+| `lib/index.js` | 宿主侧仅保留针对 v0.3 遗留 btw 子代理的防护 |
 | `docs/DETAIL.md` | 用法、隔离保证与已知限制 |
 
 ## 安装
@@ -33,3 +35,7 @@
 在 DeepSeek Harness Web GUI 中：**Plugins → Add plugin**，选择本目录
 （`dsh-btw/`）。需要标准 web 客户端组成（`dsh-client-ui-conversation`、
 `dsh-client-ui-sidebar-right`），DSH 0.2.2-rc.3 及以后版本自带。
+
+## 许可证
+
+MIT
