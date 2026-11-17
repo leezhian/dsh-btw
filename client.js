@@ -2,7 +2,7 @@
  * Client half of @local/dsh-btw (v0.7 — per-main-session temporary side chats).
  *
  * A temporary side chat, in the ChatGPT sense:
- * - `btw <question>` (or the composer button) opens one side conversation;
+ * - `btw <question>` (or the sidebar-foot button) opens one side conversation;
  * - it is an ORDINARY session (main session's cwd, no workspace, no subagent,
  *   no catalog) — nothing can flow back into the main conversation, and the
  *   main session's subagent badge never grows;
@@ -342,8 +342,8 @@ window.__ModuleLoader__.load({
 .btw-send[disabled] { opacity: .45; cursor: default; }
 .btw-send svg { display: block; }
 .btw-open-button { background: none; border: none; cursor: pointer; font: inherit;
-  font-size: 12px; color: var(--dsw-alias-label-secondary); padding: 2px 6px;
-  border-radius: 4px; }
+  font-size: 12px; color: var(--dsw-alias-label-secondary); padding: 5px 8px;
+  border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
 .btw-open-button:hover { color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-2); }
 .btw-tab-title { display: inline-flex; align-items: center; gap: 6px; }
@@ -393,6 +393,19 @@ window.__ModuleLoader__.load({
           className: rightAligned ? 'btw-menu btw-menu-right' : 'btw-menu',
           role: 'menu',
         }, children))
+    }
+
+    /** The plugin's mark: message-circle-plus (matches icon.svg), themed. */
+    function BtwIcon({ size = 14 }) {
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 2,
+        strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true, style: { flex: 'none' },
+      },
+        h('path', { d: 'M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719' }),
+        h('path', { d: 'M8 12h8' }),
+        h('path', { d: 'M12 8v8' }))
     }
 
     /** Downward chevron, baseline-aligned inside a chip button. */
@@ -886,6 +899,7 @@ window.__ModuleLoader__.load({
       const snapshot = useSource(binding?.session)
       const running = snapshot?.running === true
       return h('span', { className: 'btw-tab-title' },
+        h(BtwIcon, { size: 13 }),
         t('tab.title'),
         running ? h('span', { className: 'btw-dot' }) : null)
     }
@@ -987,7 +1001,7 @@ window.__ModuleLoader__.load({
         const dictionaries = {
           zh: {
             'tab.title': '侧边聊天',
-            'button.open': 'btw',
+            'button.open': '侧边聊天',
             'button.open.title': '打开临时侧边聊天（不占用当前会话上下文）',
             'empty.title': '侧边聊天',
             'empty.hint': '侧边聊天是临时聊天，关闭应用后会消失',
@@ -1011,7 +1025,7 @@ window.__ModuleLoader__.load({
           },
           en: {
             'tab.title': 'Side chat',
-            'button.open': 'btw',
+            'button.open': 'Side chat',
             'button.open.title': 'Open a temporary side chat',
             'empty.title': 'Side chat',
             'empty.hint': 'The side chat is temporary and disappears when the app closes.',
@@ -1192,15 +1206,17 @@ window.__ModuleLoader__.load({
           name: 'sidebar.right.pane.tab.title', key: TAB_TYPE_ID,
         }, props => h(BtwTitle, { ...props, controllers, t }))), 'dsh-btw: tab title')
 
-        // Composer-left entry point.
-        ctx.effect(() => ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
-          name: 'conversation.input.left', id: 'btw-open', order: 20,
+        // Sidebar-foot entry point (beside Settings).
+        ctx.effect(() => ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+          name: 'sidebar.footer.action', id: 'btw-open', order: 10,
           label: () => t('button.open'),
         }, () => h('button', {
           className: 'btw-open-button',
           title: t('button.open.title'),
           onClick: () => void open(''),
-        }, t('button.open')))), 'dsh-btw: composer button')
+        },
+          h(BtwIcon, { size: 14 }),
+          h('span', null, t('button.open'))))), 'dsh-btw: sidebar button')
       },
     }
   },

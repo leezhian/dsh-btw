@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- btw: a main bubble with a small detached side bubble (original artwork) -->
-  <rect x="4" y="10" width="40" height="28" rx="9" fill="#247bbf"/>
-  <path d="M14 38v8c0 1.6 1.9 2.4 3 1.2l7.4-8.2z" fill="#247bbf"/>
-  <rect x="36" y="34" width="22" height="16" rx="6" fill="#7fb56f"/>
-  <path d="M54 50v5.5c0 1.4-1.7 2-2.7 1L47 50z" fill="#7fb56f"/>
-  <circle cx="16" cy="24" r="2.6" fill="#ffffff"/>
-  <circle cx="24" cy="24" r="2.6" fill="#ffffff"/>
-  <circle cx="32" cy="24" r="2.6" fill="#ffffff"/>
-  <circle cx="43" cy="42" r="2" fill="#ffffff"/>
-  <circle cx="50" cy="42" r="2" fill="#ffffff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-plus preview-icon"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
