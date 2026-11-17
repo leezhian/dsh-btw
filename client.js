@@ -341,11 +341,6 @@ window.__ModuleLoader__.load({
   justify-content: center; padding: 0; flex: none; }
 .btw-send[disabled] { opacity: .45; cursor: default; }
 .btw-send svg { display: block; }
-.btw-row-button { background: none; border: none; cursor: pointer; padding: 3px;
-  border-radius: 5px; color: var(--dsw-alias-label-secondary);
-  display: inline-flex; align-items: center; }
-.btw-row-button:hover { color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-bg-layer-2); }
 .btw-open-button:hover { color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-2); }
 .btw-tab-title { display: inline-flex; align-items: center; gap: 6px; }
@@ -1196,7 +1191,7 @@ window.__ModuleLoader__.load({
 
         // Tab type + body + title. The keyed seats dispatch by registration id.
         /** IconProps adapter for the guide card (size comes from the host). */
-        const GuideIcon = iconProps => h(BtwIcon, { size: typeof iconProps?.size === 'number' ? iconProps.size : 16 })
+        const GuideIcon = iconProps => h(BtwIcon, { size: typeof iconProps?.size === 'number' ? Math.max(12, Math.min(14, iconProps.size - 2)) : 14 })
 
         ctx.effect(() => ctx.sidebarRightTabs.register({
           id: TAB_TYPE_ID,
@@ -1226,16 +1221,8 @@ window.__ModuleLoader__.load({
           name: 'sidebar.right.pane.tab.title', key: TAB_TYPE_ID,
         }, props => h(BtwTitle, { ...props, controllers, t }))), 'dsh-btw: tab title')
 
-        // Session-row entry: a btw icon button on each session row's hover
-        // strip (before archive/pin), opening THAT session's side chat.
-        ctx.effect(() => ctx.slots.inject('sidebar.workspaces.session.row.action', () => ctx.slots.register({
-          name: 'sidebar.workspaces.session.row.action', id: 'btw-open', order: 50,
-          label: () => t('button.open'),
-        }, ({ sessionId }) => h('button', {
-          className: 'btw-row-button',
-          title: t('button.open.title'),
-          onClick: () => void openAt(sessionId, ''),
-        }, h(BtwIcon, { size: 14 })))), 'dsh-btw: session row button')
+
+
       },
     }
   },
