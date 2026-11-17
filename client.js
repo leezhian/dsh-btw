@@ -323,7 +323,8 @@ window.__ModuleLoader__.load({
 .btw-open-button:hover { color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-2); }
 .btw-tab-title { display: inline-flex; align-items: center; gap: 6px; }
-.btw-native { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.btw-native { position: absolute; inset: 0; display: flex;
+  width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .btw-dot { width: 6px; height: 6px; border-radius: 50%;
   background: var(--dsw-alias-brand-primary); }
 `
@@ -875,12 +876,14 @@ window.__ModuleLoader__.load({
       const activeNow = conversation.activeTargets.size > 0
         || (!session.blank && !session.awaitingFirstTurn)
         || session.running
-      const shellPhase = activeNow ? 'active' : session.promptAttempted ? 'engaging' : 'blank'
+      // Never enter the hero phase: the side chat's session already has its
+      // working directory, so the "New Session" workspace/preset screen would
+      // only add an irrelevant choice. Render the conversation directly —
+      // empty context, composer ready.
       const summaryBlank = useSessions(state => state.byId[sessionId]?.blank)
-      const settling = shellPhase === 'blank' && session.openState === 'loading' && summaryBlank !== true
-      const hero = shellPhase === 'blank' && (session.openState === 'open' || summaryBlank === true)
-      const phase = settling ? 'settling' : hero ? 'hero' : 'active'
-      return renderFactorySlot('conversation.content', { variant: 'embedded', phase, hero }, {
+      const settling = !activeNow && session.openState === 'loading' && summaryBlank !== true
+      const phase = settling ? 'settling' : 'active'
+      return renderFactorySlot('conversation.content', { variant: 'embedded', phase, hero: false }, {
         slots: { views: FixedChatView },
       })
     }
@@ -913,7 +916,8 @@ window.__ModuleLoader__.load({
      * framework props are absent). Owns the close-to-discard unmount signal
      * for both paths.
      */
-    function NativeChatTab({ controller, t, localizedPresetLabel, SessionProvider, renderSlot }) {
+    function NativeChatTab(props) {
+      const { controller, t, localizedPresetLabel, SessionProvider, renderSlot } = props
       const state = useSource(controller.store)
       useEffect(() => {
         controller.noteMounted()
@@ -921,9 +925,14 @@ window.__ModuleLoader__.load({
       }, [controller])
       const reference = controller.reference
       if (state.phase !== 'ready' || reference === undefined || SessionProvider === undefined) {
+        // Creating, or the framework props are unavailable: the hand-built
+        // panel serves as its own complete interface.
         return h(BtwBody, { controller, t, localizedPresetLabel })
       }
       return h(ChatTabBoundary, { controller, t, localizedPresetLabel },
+        // Styles must mount on the native path too: .btw-native's layout
+        // lives in this stylesheet, which the fallback panel used to own.
+        h(Styles, null),
         h('div', { className: 'btw-native', 'data-btw-native': '' },
           h(SessionProvider, { session: reference },
             renderSlot(CHAT_SEAT, {}))))
@@ -1108,6 +1117,10 @@ window.__ModuleLoader__.load({
 
         ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
           name: 'sidebar.right.pane.tab', key: TAB_TYPE_ID, locale: 'btw',
+          // Declaring the session-scoped child seat is what makes the runtime
+          // inject renderSlot + SessionProvider into this entry (scoped-slots
+          // standardKit: `if (entry.children !== undefined)`).
+          children: { [CHAT_SEAT]: { kind: 'single', scope: 'session' } },
         }, props => h(NativeChatTab, { ...props, controller, t, localizedPresetLabel }))), 'dsh-btw: tab body')
 
         ctx.effect(() => ctx.slots.inject(CHAT_SEAT, () => ctx.slots.register({
