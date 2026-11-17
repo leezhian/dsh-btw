@@ -968,8 +968,13 @@ window.__ModuleLoader__.load({
      * for both paths.
      */
     function NativeChatTab(props) {
-      const { sessionId, controllers, t, localizedPresetLabel, SessionProvider, renderSlot } = props
+      const { sessionId, controllers, openAt, t, localizedPresetLabel, SessionProvider, renderSlot } = props
       const controller = controllers.get(sessionId)
+      // Opening the btw page for a main session without a live side chat
+      // (guide card, restored tab) creates one — the page is never dead.
+      useEffect(() => {
+        if (controller === undefined && sessionId !== undefined) void openAt(sessionId, '')
+      }, [controller, sessionId, openAt])
       // A btw tab whose owning main session has no live side chat is a
       // persisted zombie (e.g. after a restart); the sweep closes it and the
       // body renders nothing meanwhile.
@@ -1003,6 +1008,7 @@ window.__ModuleLoader__.load({
         const dictionaries = {
           zh: {
             'tab.title': '侧边聊天',
+            'guide.description': '临时侧边聊天：与当前会话互不干扰的空白对话',
             'button.open': '侧边聊天',
             'button.open.title': '打开临时侧边聊天（不占用当前会话上下文）',
             'empty.title': '侧边聊天',
@@ -1027,6 +1033,7 @@ window.__ModuleLoader__.load({
           },
           en: {
             'tab.title': 'Side chat',
+            'guide.description': 'A throwaway side chat isolated from this session',
             'button.open': 'Side chat',
             'button.open.title': 'Open a temporary side chat',
             'empty.title': 'Side chat',
@@ -1188,10 +1195,19 @@ window.__ModuleLoader__.load({
         }, 'dsh-btw: zombie tab sweep')
 
         // Tab type + body + title. The keyed seats dispatch by registration id.
+        /** IconProps adapter for the guide card (size comes from the host). */
+        const GuideIcon = iconProps => h(BtwIcon, { size: typeof iconProps?.size === 'number' ? iconProps.size : 16 })
+
         ctx.effect(() => ctx.sidebarRightTabs.register({
           id: TAB_TYPE_ID,
           kind: TAB_KIND,
           title: () => t('tab.title'),
+          guide: [{
+            id: 'btw', order: 30,
+            title: () => t('tab.title'),
+            description: () => t('guide.description'),
+            icon: GuideIcon,
+          }],
         }), 'dsh-btw: tab type')
 
         ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
@@ -1200,7 +1216,7 @@ window.__ModuleLoader__.load({
           // inject renderSlot + SessionProvider into this entry (scoped-slots
           // standardKit: `if (entry.children !== undefined)`).
           children: { [CHAT_SEAT]: { kind: 'single', scope: 'session' } },
-        }, props => h(NativeChatTab, { ...props, controllers, t, localizedPresetLabel }))), 'dsh-btw: tab body')
+        }, props => h(NativeChatTab, { ...props, controllers, openAt, t, localizedPresetLabel }))), 'dsh-btw: tab body')
 
         ctx.effect(() => ctx.slots.inject(CHAT_SEAT, () => ctx.slots.register({
           name: CHAT_SEAT,
