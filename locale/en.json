@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "btw side chat",
-    "description": "Adds /btw: a throwaway side conversation in the right panel. The side chat is an isolated spawn-child of the current session (fresh context, caller-only delivery, nothing flows back), never listed in the left sidebar, and discarded when its tab closes.",
+    "description": "Adds the /btw command and a start-page card: a throwaway side conversation in the right panel. The panel is the host's native conversation UI (attachments, permission and model switching included); the side chat is an independent plain session with zero flow-back into the main conversation and no subagent footprint. Closing the tab discards it; each main session keeps its own.",
     "detail": "docs/DETAIL.md"
   }
 }
