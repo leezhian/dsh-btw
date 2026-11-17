@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-btw",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "description": "Throwaway side chat: /btw opens an isolated scratch session in the right panel, never touching the main conversation's context.",

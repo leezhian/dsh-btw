@@ -1,5 +1,5 @@
 /**
- * Client half of @local/dsh-btw (v0.5 — rollback to the working panel).
+ * Client half of @local/dsh-btw (v0.7 — per-main-session temporary side chats).
  *
  * A temporary side chat, in the ChatGPT sense:
  * - `btw <question>` (or the composer button) opens one side conversation;
@@ -23,8 +23,11 @@ window.__ModuleLoader__.load({
     const TAB_TYPE_ID = '@local/dsh-btw'
     const TAB_KIND = 'btw'
     const CHAT_SEAT = 'btw.chat.conversation'
-    const RETAIN_SOURCE = 'controllerOperation'
+    /** Retention label owned by the shipped sidebar-chat feature (honest stats). */
+    const RETAIN_SOURCE = 'sidebarChat'
     const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
+    /** Remount-cancel window for close-to-discard (pane reshuffle protection). */
+    const REMOUNT_CANCEL_WINDOW_MS = 300
 
     // ---------------------------------------------------------------- store --
 
@@ -68,6 +71,7 @@ window.__ModuleLoader__.load({
         this.reference = null
         this.mainId = null
         this.mountGeneration = 0
+        this.discardTimer = null
         this.store = createStore({ phase: 'idle', childId: null, error: null })
       }
 
@@ -86,6 +90,8 @@ window.__ModuleLoader__.load({
           this.reference = null
         }
         this.store.set({ phase: 'creating', childId: null, error: null })
+        // Remember the owner even on failure so retry() can rebuild.
+        this.mainId = mainId
         try {
           const cwd = this.ctx.sessions.list.getSnapshot().byId?.[mainId]?.cwd
           const childId = await this.ctx.sessions.create(
@@ -100,6 +106,12 @@ window.__ModuleLoader__.load({
           this.store.set({ phase: 'failed', childId: null, error: messageOf(error) })
           return null
         }
+      }
+
+      /** Retry a failed ensure for the same main session. */
+      retry() {
+        if (this.mainId === null) return Promise.resolve(null)
+        return this.ensure(this.mainId)
       }
 
       /** Send one message (text, optionally with image parts). */
@@ -130,6 +142,7 @@ window.__ModuleLoader__.load({
 
       /** Discard on tab close: mark, cancel, archive, release. */
       async discard() {
+        this.clearDiscardTimer()
         const reference = this.reference
         const id = this.childId
         this.reference = null
@@ -163,18 +176,29 @@ window.__ModuleLoader__.load({
         if (ownerMainId === null) return
         this.mountGeneration += 1
         const generation = this.mountGeneration
-        setTimeout(() => {
+        this.clearDiscardTimer()
+        this.discardTimer = setTimeout(() => {
+          this.discardTimer = null
           if (generation !== this.mountGeneration) return // remounted meanwhile
           const stillOpen = this.ctx.sidebarRight.openTabs.getSnapshot()
             .some(tab => tab.kind === 'btw' && tab.sessionId === ownerMainId)
           if (stillOpen) return // session switch / pane hidden: keep the chat
           void this.discard()
-        }, 300)
+        }, REMOUNT_CANCEL_WINDOW_MS)
+      }
+
+      /** Cancel a pending close-discard timer (remount or teardown). */
+      clearDiscardTimer() {
+        if (this.discardTimer !== null) {
+          clearTimeout(this.discardTimer)
+          this.discardTimer = null
+        }
       }
 
       /** Mark a mount (cancels a pending discard scheduled by an unmount). */
       noteMounted() {
         this.mountGeneration += 1
+        this.clearDiscardTimer()
       }
     }
 
@@ -189,9 +213,9 @@ window.__ModuleLoader__.load({
       return out
     }
 
-    function foldRows(window) {
+    function foldRows(eventWindow) {
       const rows = []
-      for (const entry of window?.entries ?? []) {
+      for (const entry of eventWindow?.entries ?? []) {
         const event = entry?.event
         if (event === undefined) continue
         const data = event.data ?? {}
@@ -267,7 +291,7 @@ window.__ModuleLoader__.load({
 .btw-attachment-remove { position: absolute; top: -6px; right: -6px; width: 16px;
   height: 16px; border-radius: 50%; border: none; cursor: pointer; font-size: 11px;
   line-height: 1; background: var(--dsw-alias-bg-overlay);
-  color: var(--dsw-alias-label-primary); box-shadow: 0 1px 3px rgb(0 0 0 / .3); }
+  color: var(--dsw-alias-label-primary); box-shadow: 0 1px 3px var(--dsw-alias-border-l2); }
 .btw-input { resize: none; border: none; background: transparent;
   color: var(--dsw-alias-label-primary); font: inherit; min-height: 48px;
   max-height: 160px; padding: 2px 2px 6px; }
@@ -445,10 +469,10 @@ window.__ModuleLoader__.load({
     }
 
     /** Latest /permission result folded from the child session's events. */
-    function latestPermission(window) {
+    function latestPermission(eventWindow) {
       const names = new Map()
       let result = null
-      for (const entry of window?.entries ?? []) {
+      for (const entry of eventWindow?.entries ?? []) {
         const event = entry?.event
         if (event === undefined) continue
         if (event.type === 'command/run' && event.data?.name === 'permission') {
@@ -466,9 +490,9 @@ window.__ModuleLoader__.load({
     function BtwBody({ controller, t, localizedPresetLabel }) {
       const state = useSource(controller.store)
       const binding = controller.binding()
-      const window = useSource(binding?.eventSource)
+      const eventWindow = useSource(binding?.eventSource)
       const sessionSnapshot = useSource(binding?.session)
-      const rows = useMemo(() => foldRows(window), [window])
+      const rows = useMemo(() => foldRows(eventWindow), [eventWindow])
       const [draft, setDraft] = useState('')
       const [images, setImages] = useState([])
       const [menu, setMenu] = useState(null) // null | 'permission' | 'model'
@@ -507,7 +531,7 @@ window.__ModuleLoader__.load({
       // projection, falling back to the /permission command fold.
       const permissionsSource = binding?.session?.projections?.faceOf('permissions')
       const permissionsState = useSource(permissionsSource)
-      const permission = useMemo(() => latestPermission(window), [window])
+      const permission = useMemo(() => latestPermission(eventWindow), [eventWindow])
       const [permissionCatalog, setPermissionCatalog] = useState(null)
       useEffect(() => {
         if (!ready || permissionCatalog !== null) return
@@ -669,6 +693,7 @@ window.__ModuleLoader__.load({
       }
 
       const showEmpty = rows.length === 0 && pending.length === 0
+      const failed = state.phase === 'failed'
 
       return h('div', { className: 'btw-panel' },
         h(Styles, null),
@@ -676,7 +701,16 @@ window.__ModuleLoader__.load({
           className: 'btw-flow', ref: flowRef, onScroll: onFlowScroll,
           'aria-live': 'polite',
         },
-          showEmpty
+          failed
+            ? h('div', { className: 'btw-empty' },
+                h('div', { className: 'btw-empty-title' }, t('failed.title')),
+                h('div', null, state.error ?? ''),
+                h('button', {
+                  className: 'btw-chip-button',
+                  style: { border: '1px solid var(--dsw-alias-border-l2)' },
+                  onClick: () => void controller.retry(),
+                }, t('retry')))
+            : showEmpty
             ? h('div', { className: 'btw-empty' },
                 h('div', { className: 'btw-empty-title' }, t('empty.title')),
                 h('div', null, t('empty.hint')))
@@ -846,8 +880,9 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function BtwTitle({ controller, t }) {
-      const binding = controller.binding()
+    function BtwTitle({ sessionId, controllers, t }) {
+      const controller = controllers.get(sessionId)
+      const binding = controller?.binding()
       const snapshot = useSource(binding?.session)
       const running = snapshot?.running === true
       return h('span', { className: 'btw-tab-title' },
@@ -917,7 +952,12 @@ window.__ModuleLoader__.load({
      * for both paths.
      */
     function NativeChatTab(props) {
-      const { controller, t, localizedPresetLabel, SessionProvider, renderSlot } = props
+      const { sessionId, controllers, t, localizedPresetLabel, SessionProvider, renderSlot } = props
+      const controller = controllers.get(sessionId)
+      // A btw tab whose owning main session has no live side chat is a
+      // persisted zombie (e.g. after a restart); the sweep closes it and the
+      // body renders nothing meanwhile.
+      if (controller === undefined) return null
       const state = useSource(controller.store)
       useEffect(() => {
         controller.noteMounted()
@@ -947,7 +987,6 @@ window.__ModuleLoader__.load({
         const dictionaries = {
           zh: {
             'tab.title': '侧边聊天',
-            'guide.description': '与当前会话完全隔离的一次性支线聊天',
             'button.open': 'btw',
             'button.open.title': '打开临时侧边聊天（不占用当前会话上下文）',
             'empty.title': '侧边聊天',
@@ -960,6 +999,7 @@ window.__ModuleLoader__.load({
             'attachment.add': '添加图片',
             'attachment.remove': '移除附件',
             'permission.title': '切换权限',
+            'permission.auto': '自动审查',
             'permission.loading': '权限…',
             'model.title': '切换模型',
             'model.loading': '模型…',
@@ -971,7 +1011,6 @@ window.__ModuleLoader__.load({
           },
           en: {
             'tab.title': 'Side chat',
-            'guide.description': 'A throwaway side chat isolated from this session',
             'button.open': 'btw',
             'button.open.title': 'Open a temporary side chat',
             'empty.title': 'Side chat',
@@ -984,6 +1023,7 @@ window.__ModuleLoader__.load({
             'attachment.add': 'Attach images',
             'attachment.remove': 'Remove attachment',
             'permission.title': 'Switch permission preset',
+            'permission.auto': 'Auto review',
             'permission.loading': 'permission…',
             'model.title': 'Switch model',
             'model.loading': 'models…',
@@ -1021,8 +1061,7 @@ window.__ModuleLoader__.load({
          */
         const localizedPresetLabel = (value, name) => {
           if (value === 'auto') {
-            try { return tPermission !== null ? tPermission('auto.label') : '自动审查' }
-            catch { return '自动审查' }
+            return tPermission !== null ? tPermission('auto.label') : t('permission.auto')
           }
           const key = PERMISSION_LABEL_KEYS.get(value)
           if (key !== undefined && tPermission !== null
@@ -1032,22 +1071,42 @@ window.__ModuleLoader__.load({
           return name ?? value
         }
 
-        const controller = new BtwController(ctx)
-        ctx.effect(() => () => { void controller.discard() }, 'dsh-btw: controller teardown')
+        /** One live side chat per MAIN SESSION — no cross-session sharing. */
+        const controllers = new Map() // mainId -> BtwController
+        /** Coalesce concurrent opens per main session (double /btw races). */
+        const inflight = new Map() // mainId -> Promise
+        ctx.effect(() => () => {
+          for (const controller of controllers.values()) void controller.discard()
+          controllers.clear()
+          inflight.clear()
+        }, 'dsh-btw: controller teardown')
 
         /**
-         * Open a FRESH side chat: discard any previous one first (cancel +
-         * archive, which also clears its sidebar row), then create a new
-         * session. No reuse — closing or re-running `btw` always starts over.
+         * Open a FRESH side chat for the on-screen main session: discard that
+         * session's previous chat first (cancel + archive, clearing its
+         * sidebar row), then create a new session. Other main sessions' chats
+         * are untouched. Concurrent invocations for the same main session
+         * coalesce onto one operation.
          */
         const open = async (task = '') => {
           const mainId = ctx.uiSession.adapter.current.getSnapshot()?.key
           if (mainId === undefined) return
-          await controller.discard()
-          await controller.ensure(mainId)
-          try { ctx.sidebarRight.openTab(TAB_KIND) } catch { /* no on-screen session */ }
-          const text = task.trim()
-          if (text !== '') await controller.prompt(text)
+          const running = inflight.get(mainId)
+          if (running !== undefined) return running
+          const operation = (async () => {
+            let controller = controllers.get(mainId)
+            if (controller === undefined) {
+              controller = new BtwController(ctx)
+              controllers.set(mainId, controller)
+            }
+            await controller.discard()
+            await controller.ensure(mainId)
+            try { ctx.sidebarRight.openTab(TAB_KIND) } catch { /* no on-screen session */ }
+            const text = task.trim()
+            if (text !== '') await controller.prompt(text)
+          })()
+          inflight.set(mainId, operation)
+          try { await operation } finally { inflight.delete(mainId) }
         }
 
         // /btw watcher — watermark so a closed tab never reopens from history.
@@ -1093,20 +1152,22 @@ window.__ModuleLoader__.load({
           return () => { unsubscribeCurrent(); unsubscribeList(); detach() }
         }, 'dsh-btw: /btw watcher')
 
-        // Closing the tab discards the chat.
+        // Zombie-tab sweep: btw tab records persist in per-session layouts
+        // (localStorage). After a restart no controller exists for any of
+        // them, and a bodyless record would render a dead panel — close every
+        // btw tab whose owning main session has no live side chat. Legitimate
+        // tabs always have their controller registered BEFORE openTab.
         ctx.effect(() => {
-          let armed = false
           const onTabs = () => {
-            const oursOpen = ctx.sidebarRight.openTabs.getSnapshot()
-              .some(tab => tab.kind === TAB_KIND)
-            if (oursOpen) { armed = true; return }
-            if (armed) {
-              armed = false
-              void controller.discard()
+            for (const tab of ctx.sidebarRight.openTabs.getSnapshot()) {
+              if (tab.kind !== TAB_KIND) continue
+              if (controllers.has(tab.sessionId)) continue
+              try { ctx.sidebarRight.closeIn(tab.sessionId, tab.tabId) }
+              catch { /* already closed */ }
             }
           }
           return ctx.sidebarRight.openTabs.subscribe(onTabs)
-        }, 'dsh-btw: close-to-discard')
+        }, 'dsh-btw: zombie tab sweep')
 
         // Tab type + body + title. The keyed seats dispatch by registration id.
         ctx.effect(() => ctx.sidebarRightTabs.register({
@@ -1121,7 +1182,7 @@ window.__ModuleLoader__.load({
           // inject renderSlot + SessionProvider into this entry (scoped-slots
           // standardKit: `if (entry.children !== undefined)`).
           children: { [CHAT_SEAT]: { kind: 'single', scope: 'session' } },
-        }, props => h(NativeChatTab, { ...props, controller, t, localizedPresetLabel }))), 'dsh-btw: tab body')
+        }, props => h(NativeChatTab, { ...props, controllers, t, localizedPresetLabel }))), 'dsh-btw: tab body')
 
         ctx.effect(() => ctx.slots.inject(CHAT_SEAT, () => ctx.slots.register({
           name: CHAT_SEAT,
@@ -1129,7 +1190,7 @@ window.__ModuleLoader__.load({
 
         ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => ctx.slots.register({
           name: 'sidebar.right.pane.tab.title', key: TAB_TYPE_ID,
-        }, props => h(BtwTitle, { ...props, controller, t }))), 'dsh-btw: tab title')
+        }, props => h(BtwTitle, { ...props, controllers, t }))), 'dsh-btw: tab title')
 
         // Composer-left entry point.
         ctx.effect(() => ctx.slots.inject('conversation.input.left', () => ctx.slots.register({

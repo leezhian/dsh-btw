@@ -1,5 +1,5 @@
 /**
- * Host half of @local/dsh-btw (v0.4.1 — minimal temporary chat).
+ * Host half of @local/dsh-btw (v0.7 — per-main-session temporary side chats).
  *
  * The side chat is an ordinary session created and driven entirely by the
  * Client half. The Host registers only:
@@ -71,12 +71,7 @@ export function apply(ctx) {
     if (!messages.some(message =>
       message?.source?.kind === 'subagent-settled'
       && typeof message.source.senderSessionId === 'string')) return decision
-    let ids
-    try {
-      ids = await legacyChildIds(payload.agent.id)
-    } catch {
-      return decision
-    }
+    const ids = await legacyChildIds(payload.agent.id) // never throws
     if (ids.size === 0) return decision
     const filtered = messages.filter(message =>
       message?.source?.kind !== 'subagent-settled'
