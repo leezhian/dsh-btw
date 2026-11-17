@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "btw side chat",
+    "description": "Adds /btw: a throwaway side conversation in the right panel. The side chat is an isolated spawn-child of the current session (fresh context, caller-only delivery, nothing flows back), never listed in the left sidebar, and discarded when its tab closes.",
+    "detail": "docs/DETAIL.md"
+  }
+}

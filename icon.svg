@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- btw: a main bubble with a small detached side bubble (original artwork) -->
+  <rect x="4" y="10" width="40" height="28" rx="9" fill="#247bbf"/>
+  <path d="M14 38v8c0 1.6 1.9 2.4 3 1.2l7.4-8.2z" fill="#247bbf"/>
+  <rect x="36" y="34" width="22" height="16" rx="6" fill="#7fb56f"/>
+  <path d="M54 50v5.5c0 1.4-1.7 2-2.7 1L47 50z" fill="#7fb56f"/>
+  <circle cx="16" cy="24" r="2.6" fill="#ffffff"/>
+  <circle cx="24" cy="24" r="2.6" fill="#ffffff"/>
+  <circle cx="32" cy="24" r="2.6" fill="#ffffff"/>
+  <circle cx="43" cy="42" r="2" fill="#ffffff"/>
+  <circle cx="50" cy="42" r="2" fill="#ffffff"/>
+</svg>
