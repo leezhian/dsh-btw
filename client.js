@@ -998,12 +998,15 @@ window.__ModuleLoader__.load({
 
     return {
       inject: ['slots', 'sessions', 'locale', 'uiSession', 'remote', 'remote.session',
-        'remote.permissionPresets', 'sidebarRight', 'sidebarRightTabs', 'workspaces'],
+        'remote.permissionPresets', 'commandUi', 'sidebarRight', 'sidebarRightTabs',
+        'workspaces'],
       apply(ctx) {
         const dictionaries = {
           zh: {
             'tab.title': '侧边聊天',
             'guide.description': '临时侧边聊天：与当前会话互不干扰的空白对话',
+            'command.label': '侧边聊天',
+            'command.description': '打开一个与当前会话隔离的临时侧边聊天',
             'button.open': '侧边聊天',
             'button.open.title': '打开临时侧边聊天（不占用当前会话上下文）',
             'empty.title': '侧边聊天',
@@ -1029,6 +1032,8 @@ window.__ModuleLoader__.load({
           en: {
             'tab.title': 'Side chat',
             'guide.description': 'A throwaway side chat isolated from this session',
+            'command.label': 'Side chat',
+            'command.description': 'Open a temporary side chat isolated from this conversation',
             'button.open': 'Side chat',
             'button.open.title': 'Open a temporary side chat',
             'empty.title': 'Side chat',
@@ -1058,6 +1063,19 @@ window.__ModuleLoader__.load({
           return () => { for (const dispose of disposers) dispose() }
         }, 'dsh-btw: locale')
         const t = ctx.locale.bind('btw')
+
+        // `/btw` as a CLIENT command contribution: the menu row gets the
+        // localized label (the name `btw` renders beside it as the alias),
+        // the plugin mark, and a localized description — and a bare
+        // invocation submits nothing to the main session (perfect isolation).
+        ctx.effect(() => ctx.commandUi.register({
+          name: COMMAND_NAME,
+          label: () => t('command.label'),
+          description: () => t('command.description'),
+          icon: iconProps => h(BtwIcon, { size: typeof iconProps?.size === 'number' ? iconProps.size : 15 }),
+          available: () => true,
+          ui: { kind: 'action', run: () => { void open('') } },
+        }), 'dsh-btw: /btw client contribution')
         /** Shipped permission dictionary (registered by ui-permission-presets). */
         let tPermission = null
         try { tPermission = ctx.locale.bind('permission.access') } catch { /* package absent */ }
@@ -1129,48 +1147,6 @@ window.__ModuleLoader__.load({
         const open = (task = '') =>
           openAt(ctx.uiSession.adapter.current.getSnapshot()?.key, task)
 
-        // /btw watcher — watermark so a closed tab never reopens from history.
-        let unsubscribeEvents = null
-        let attachedId = null
-        let watermark = 0
-        const detach = () => { unsubscribeEvents?.(); unsubscribeEvents = null; attachedId = null }
-        const attach = mainId => {
-          if (mainId === attachedId && unsubscribeEvents !== null) return
-          detach()
-          if (mainId === undefined) return
-          const binding = ctx.sessions.binding(mainId)
-          if (binding === undefined) return
-          attachedId = mainId
-          let high = 0
-          for (const entry of binding.eventSource.getSnapshot().entries) {
-            const seq = entry?.event?.seq
-            if (typeof seq === 'number' && seq > high) high = seq
-          }
-          watermark = high
-          const onWindow = () => {
-            const { entries } = binding.eventSource.getSnapshot()
-            let next = watermark
-            for (const entry of entries) {
-              const event = entry?.event
-              if (event === undefined) continue
-              const seq = typeof event.seq === 'number' ? event.seq : 0
-              if (seq > next) next = seq
-              if (seq <= watermark || event.type !== 'command/run') continue
-              if (event.data?.name !== COMMAND_NAME) continue
-              void open(typeof event.data.args === 'string' ? event.data.args : '')
-            }
-            watermark = next
-          }
-          unsubscribeEvents = binding.eventSource.subscribe(onWindow)
-        }
-        ctx.effect(() => {
-          const current = ctx.uiSession.adapter.current
-          const onCurrent = () => attach(current.getSnapshot()?.key)
-          const unsubscribeCurrent = current.subscribe(onCurrent)
-          const unsubscribeList = ctx.sessions.list.subscribe(onCurrent)
-          onCurrent()
-          return () => { unsubscribeCurrent(); unsubscribeList(); detach() }
-        }, 'dsh-btw: /btw watcher')
 
         // Zombie-tab sweep: btw tab records persist in per-session layouts
         // (localStorage). After a restart no controller exists for any of
