@@ -341,9 +341,11 @@ window.__ModuleLoader__.load({
   justify-content: center; padding: 0; flex: none; }
 .btw-send[disabled] { opacity: .45; cursor: default; }
 .btw-send svg { display: block; }
-.btw-open-button { background: none; border: none; cursor: pointer; font: inherit;
-  font-size: 12px; color: var(--dsw-alias-label-secondary); padding: 5px 8px;
-  border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
+.btw-row-button { background: none; border: none; cursor: pointer; padding: 3px;
+  border-radius: 5px; color: var(--dsw-alias-label-secondary);
+  display: inline-flex; align-items: center; }
+.btw-row-button:hover { color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2); }
 .btw-open-button:hover { color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-2); }
 .btw-tab-title { display: inline-flex; align-items: center; gap: 6px; }
@@ -1102,8 +1104,7 @@ window.__ModuleLoader__.load({
          * are untouched. Concurrent invocations for the same main session
          * coalesce onto one operation.
          */
-        const open = async (task = '') => {
-          const mainId = ctx.uiSession.adapter.current.getSnapshot()?.key
+        const openAt = async (mainId, task = '') => {
           if (mainId === undefined) return
           const running = inflight.get(mainId)
           if (running !== undefined) return running
@@ -1122,6 +1123,9 @@ window.__ModuleLoader__.load({
           inflight.set(mainId, operation)
           try { await operation } finally { inflight.delete(mainId) }
         }
+
+        const open = (task = '') =>
+          openAt(ctx.uiSession.adapter.current.getSnapshot()?.key, task)
 
         // /btw watcher — watermark so a closed tab never reopens from history.
         let unsubscribeEvents = null
@@ -1206,17 +1210,16 @@ window.__ModuleLoader__.load({
           name: 'sidebar.right.pane.tab.title', key: TAB_TYPE_ID,
         }, props => h(BtwTitle, { ...props, controllers, t }))), 'dsh-btw: tab title')
 
-        // Sidebar-foot entry point (beside Settings).
-        ctx.effect(() => ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
-          name: 'sidebar.footer.action', id: 'btw-open', order: 10,
+        // Session-row entry: a btw icon button on each session row's hover
+        // strip (before archive/pin), opening THAT session's side chat.
+        ctx.effect(() => ctx.slots.inject('sidebar.workspaces.session.row.action', () => ctx.slots.register({
+          name: 'sidebar.workspaces.session.row.action', id: 'btw-open', order: 50,
           label: () => t('button.open'),
-        }, () => h('button', {
-          className: 'btw-open-button',
+        }, ({ sessionId }) => h('button', {
+          className: 'btw-row-button',
           title: t('button.open.title'),
-          onClick: () => void open(''),
-        },
-          h(BtwIcon, { size: 14 }),
-          h('span', null, t('button.open'))))), 'dsh-btw: sidebar button')
+          onClick: () => void openAt(sessionId, ''),
+        }, h(BtwIcon, { size: 14 })))), 'dsh-btw: session row button')
       },
     }
   },
