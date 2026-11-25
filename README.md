@@ -1,6 +1,6 @@
 # @kami232/dsh-btw — btw side chat
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![npm](https://img.shields.io/npm/v/@kami232/dsh-btw)](https://www.npmjs.com/package/@kami232/dsh-btw) [![npm downloads](https://img.shields.io/npm/dm/%40kami232%2Fdsh-btw?style=flat-square&color=orange)](https://www.npmjs.com/package/@kami232/dsh-btw)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![npm](https://img.shields.io/npm/v/@kami232/dsh-btw)](https://www.npmjs.com/package/@kami232/dsh-btw) [![npm downloads](https://img.shields.io/npm/dm/%40kami232%2Fdsh-btw?style=flat-square&color=orange)](https://www.npmjs.com/package/@kami232/dsh-btw) [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/leezhian/dsh-btw)
 
 English | [中文](README.zh.md)
 
