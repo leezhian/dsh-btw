@@ -1,1 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-plus preview-icon"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g mask="url(#btw-gap)">
+    <path d="M9.8 7.5H20.7C22.25 7.5 23.5 8.75 23.5 10.3V16.7C23.5 18.25 22.25 19.5 20.7 19.5H13.8L10.3 22.85C10.02 23.12 9.55 22.92 9.55 22.53V19.5C8.14 19.37 7 18.17 7 16.7V10.3C7 8.75 8.25 7.5 9.8 7.5Z" fill="url(#btw-main)" fill-opacity="0.86" />
+  </g>
+  <path d="M17.3 14H26.2C27.75 14 29 15.25 29 16.8V22.2C29 23.67 27.86 24.87 26.45 25V28.03C26.45 28.42 25.98 28.62 25.7 28.35L22.2 25H17.3C15.75 25 14.5 23.75 14.5 22.2V16.8C14.5 15.25 15.75 14 17.3 14Z" fill="url(#btw-side)" />
+  <path d="M18.2 18H25.3M18.2 21H23" stroke="#FFFFFF" stroke-width="1.65" stroke-linecap="round" />
+  <defs>
+    <mask id="btw-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+      <rect width="36" height="36" fill="#FFFFFF" />
+      <rect x="13.1" y="12.6" width="17.3" height="13.8" rx="4.2" fill="#000000" />
+    </mask>
+    <linearGradient id="btw-main" x1="15.25" y1="7.5" x2="15.25" y2="23.2" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#69B9FF" />
+      <stop offset="1" stop-color="#324DE2" />
+    </linearGradient>
+    <linearGradient id="btw-side" x1="21.75" y1="14" x2="21.75" y2="28.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5FE5BE" />
+      <stop offset="1" stop-color="#229EA9" />
+    </linearGradient>
+  </defs>
+</svg>
