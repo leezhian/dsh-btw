@@ -1,6 +1,6 @@
 {
   "name": "@kami232/dsh-btw",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "type": "module",
   "description": "btw side chat: a throwaway, isolated side conversation for DeepSeek Harness — native conversation UI, zero context flow-back, discarded on close",
   "exports": {
